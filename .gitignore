@@ -1,0 +1,32 @@
+.cursorignore
+codebase_plan_VP4behavior.md
+videoprism4behavior_old.md
+videoprism4behavior.md
+Video_Foundation_Models_for_Animal_Behavior_Analys/
+videoprism_behavior/data/
+
+# Project-specific generated files
+videoprism_behavior/processed_data/
+videoprism_behavior/trained_models/
+
+# Python boilerplate
+__pycache__/
+*.py[cod]
+*.so
+build/
+dist/
+*.egg-info/
+.eggs/
+eggs/
+.env
+.venv
+env/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.idea/
+.vscode/
+*.swp
+.ipynb_checkpoints/

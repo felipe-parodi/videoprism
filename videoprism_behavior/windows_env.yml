@@ -1,0 +1,15 @@
+name: vp_gpu
+channels:
+  - rapidsai
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch-cuda=11.8
+  - torchaudio
+  - pytorch
+  - torchvision
+  - opencv
+  - pandas
+  - tqdm
+prefix: C:\ProgramData\miniconda3\envs\vp_gpu
