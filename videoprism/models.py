@@ -36,11 +36,19 @@ outputs = forward_fn(model_inputs)
 ```
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 
 import flax
+import numpy as np
 from videoprism import encoders
+from videoprism import tokenizers
 from videoprism import utils
+
+TEXT_TOKENIZERS = {
+    'c4_en': (  # vocab_size=32_000
+        'gs://t5-data/vocabs/cc_en.32000/sentencepiece.model'
+    ),
+}
 
 CHECKPOINTS = {
     'videoprism_public_v1_base': (
@@ -129,3 +137,61 @@ def load_pretrained_weights(
   checkpoint_path = checkpoint_path or checkpoints.get(model_name)
   variables = utils.load_checkpoint(checkpoint_path)
   return flax.core.freeze(variables)
+
+
+def load_tokenizer(name: str) -> tokenizers.Tokenizer:
+  """Loads a tokenizer by name."""
+  if name not in TEXT_TOKENIZERS:
+    raise ValueError(f'Tokenizer `{name}` not found.')
+
+  model_path = TEXT_TOKENIZERS[name]
+  return tokenizers.SentencePieceTokenizer(model_path)
+
+
+def tokenize_texts(
+    tokenizer: tokenizers.Tokenizer,
+    inputs: Sequence[str],
+    max_length: int,
+    add_bos: bool | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
+  """Tokenizes a batch of texts.
+
+  Args:
+    tokenizer: The tokenizer to use.
+    inputs: The list of texts to tokenize.
+    max_length: The maximum length of the tokenized texts.
+    add_bos: Whether to add a beginning-of-sentence token. If None, the
+      beginning-of-sentence token will be added if the tokenizer's bos_token is
+      a non-negative integer.
+
+  Returns:
+    A tuple of two numpy arrays containing the padded token ids and the
+    corresponding paddings, where 1 denotes padding token.
+  """
+  batch_ids, batch_paddings = [], []
+  if add_bos is None:
+    add_bos = tokenizer.bos_token >= 0
+
+  for ids in tokenizer.to_int(inputs, bos=add_bos, eos=False):
+    ids_seq_len = len(ids)
+    if ids_seq_len > max_length:
+      ids = ids[:max_length]
+
+    ids = np.asarray(ids, dtype=np.int32)
+    paddings = np.zeros_like(ids, dtype=np.float32)
+
+    if ids_seq_len < max_length:
+      ids = np.pad(
+          ids, (0, max_length - ids_seq_len), 'constant', constant_values=0
+      )
+      paddings = np.pad(
+          paddings,
+          (0, max_length - ids_seq_len),
+          'constant',
+          constant_values=1.0,
+      )
+
+    batch_ids.append(ids)
+    batch_paddings.append(paddings)
+
+  return np.stack(batch_ids), np.stack(batch_paddings)

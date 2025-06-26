@@ -20,6 +20,7 @@ import jax
 from jax import numpy as jnp
 import numpy as np
 from videoprism import models
+from videoprism import tokenizers
 
 
 class ModelsTest(parameterized.TestCase):
@@ -42,6 +43,30 @@ class ModelsTest(parameterized.TestCase):
 
     embeddings, _ = forward_fn(inputs)
     self.assertEqual(embeddings.shape, (batch_size, num_frames * 16**2, 768))
+
+  def test_tokenize_texts(self):
+    import os
+    spm_path = os.path.join(
+        os.path.dirname(__file__), 'assets', 'testdata', 'test_spm.model'
+    )
+    model = tokenizers.SentencePieceTokenizer(spm_path)
+    ids, paddings = models.tokenize_texts(
+        model,
+        ['blah', 'blah blah', 'blah blah blah'],
+        max_length=6,
+        add_bos=False,
+    )
+    np.testing.assert_array_equal(
+        ids,
+        [
+            [80, 180, 60, 0, 0, 0],
+            [80, 180, 60, 80, 180, 60],
+            [80, 180, 60, 80, 180, 60],
+        ],
+    )
+    np.testing.assert_array_equal(
+        paddings, [[0, 0, 0, 1, 1, 1], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+    )
 
 
 if __name__ == '__main__':
